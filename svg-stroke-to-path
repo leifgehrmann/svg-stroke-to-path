@@ -5,38 +5,45 @@ input_filename=$1
 select_query=$2
 path_attribute=$3
 output_filename=$4
+# Hopefully this `realpath` shim works on all platform 😬
+output_real_filename="$(cd "$(dirname "$0")" && pwd -P)/$output_filename"
 
+# Todo: validate that Inkscape is installed
 # Todo: validate arguments
 # Todo: validate that input filename exists
 # Todo: validate that selectory query is a valid string
 
 # Generate the "selector" element
 selector_object_id='_StrokeToPathSelectorObject'
-selector_object='<path id="$selector_object_id" $path_attribute d="M0 0 H 1"/>'
+selector_object="    <path\
+ id=\"${selector_object_id}\"\
+ ${path_attribute}\
+ d=\"M0 0 H 1\"/>\n"
 
-# Read input file and get position of closing `svg` tag in the SVG
+# Read input file
 input_content=`cat $input_filename`
-svg_close_index=`echo $input_content | grep -b -o "</svg>"`
-svg_close_index_plus_one=$svg_close_index + 1
 
-# Add "selector" element to the SVG
-modified_input="${value:0:$svg_close_index}$selector_object${value:$svg_close_index_plus_one}"
+# Todo: Validate that content contains closing `svg` tag
+
+# Get position of closing `svg` tag in the SVG
+svg_close_index=`echo "$input_content" | grep -b -o "</svg>" | cut -d: -f1`
+
+# Insert "selector" element into the SVG
+modified_input="${input_content:0:$svg_close_index}\
+$selector_object\
+${input_content:$svg_close_index}"
 
 # Store the new SVG
-echo $modified_input > output.svg
+echo "$modified_input" > $output_filename
 
 # Convert stroke to path by selecting the "selector" element and use Inkscapes
 # selector query to select similar objects and convert stroke to path
-inkscape -f output.svg\
-  --select="_StrokeToPathSelectorObject"\
-  --verb="EditSelectSameStrokeColor"\
-  --verb="StrokeToPath"\
-  --verb="FileSave"\
-  --verb="FileQuit"
-
-# Remove "selector" element from the SVG
-inkscape -f output.svg\
-  --select="_StrokeToPathSelectorObject"\
-  --verb="EditDelete"\
-  --verb="FileSave"\
-  --verb="FileQuit"
+inkscape -f $output_real_filename\
+    --select=$selector_object_id\
+    --verb="EditSelect$select_query"\
+    --verb="StrokeToPath"\
+    --verb="EditDeselect"\
+    --select=$selector_object_id\
+    --verb="EditDelete"\
+    --verb="FileSave"\
+    --verb="FileQuit"
