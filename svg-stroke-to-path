@@ -1,0 +1,12 @@
+#!/bin/sh
+
+input=`cat input.svg`
+svgcloseIndex=`echo $input | grep -b -o "</svg>"`
+
+theStr="${value:0:$svgCloseIndex}A${value:}"
+
+echo $modifiedInput > output.svg
+
+inkscape -f output.svg --select="__StrokeToPath" --verb="EditSelectSameStrokeColor" --verb="StrokeToPath" --verb="FileSave" --verb="FileQuit"
+
+inkscape -f output.svg --select="__StrokeToPath" --verb="EditDelete" --verb="FileSave" --verb="FileQuit"
