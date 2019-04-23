@@ -1,32 +1,115 @@
 #!/bin/sh
 
+display_help() {
+    echo
+    echo "Usage: $0 input_filename select_method select_attr output_filename" \
+>&2
+    echo
+    echo "  select_method can be one of:"
+    echo "    * All - Select all objects"
+    echo "    * AllInAllLayers - Select all objects in all visible and"
+    echo "      unlocked layers"
+    echo "    * SameFillStroke - Select all objects with the same fill"
+    echo "      and stroke as the selected objects"
+    echo "    * SameFillColor - Select all objects with the same fill"
+    echo "      as the selected objects"
+    echo "    * SameStrokeColor - Select all objects with the same"
+    echo "      stroke as the selected objects"
+    echo "    * SameStrokeStyle - Select all objects with the same stroke"
+    echo "      style (width, dash, markers) as the selected objects"
+    echo
+    echo "  select_attr can be a variety of SVG attributes, for example:"
+    echo "    * 'stroke=\"#000\"'"
+    echo "    * 'fill=\"#000\"'"
+    echo "    * 'stroke=\"red\" stroke-weight=\"2\"'"
+    echo
+}
+
+if [ "$1" == "-h" ]; then
+  display_help
+  exit 0
+fi
+
+# Verify that Inkscape is installed
+if ! [ -x "$(command -v inkscape)" ]; then
+  display_help
+  echo 'Error: inkscape is not installed.' >&2
+  exit 1
+fi
+
 # Read the arguments
 input_filename=$1
-select_query=$2
-path_attribute=$3
+select_method=$2
+select_attr=$3
 output_filename=$4
-# Hopefully this `realpath` shim works on all platform 😬
+# Hopefully this `realpath` shim works on all platforms 😬
 output_real_filename="$(cd "$(dirname "$0")" && pwd -P)/$output_filename"
 
-# Todo: validate that Inkscape is installed
-# Todo: validate arguments
-# Todo: validate that input filename exists
-# Todo: validate that selectory query is a valid string
+# Todo: validate arguments are all strings
+if [ -z "$input_filename" ]; then
+    display_help
+    echo "Error: input_filename required"
+    exit 1
+fi
+
+if [ -z "$select_method" ]; then
+    display_help
+    echo "Error: select_method required"
+    exit 1
+fi
+
+if [ -z "$select_attr" ]; then
+    display_help
+    echo "Error: select_attr required"
+    exit 1
+fi
+
+if [ -z "$output_filename" ]; then
+    display_help
+    echo "Error: output_filename required"
+    exit 1
+fi
+
+# Validate that input_filename exists
+if [ ! -f "$input_filename" ]; then
+    display_help
+    echo "Error: input_filename '$input_filename' not found"
+    exit 1
+fi
+
+# Validate that selectory query is a valid string
+case $select_method in
+    All|\
+    AllInAllLayers|\
+    SameFillStroke|\
+    SameFillColor|\
+    SameStrokeColor|\
+    SameStrokeStyle);;
+    *)
+    display_help;
+    echo "Error: select_method '$select_method' is not valid"
+    exit 1;;
+esac
+
+ # Validate that content contains closing `svg` tag
+ if ! grep -q "</svg>" "$input_filename"; then
+   display_help
+   echo "Error: input_filename $input_filename not valid SVG"
+   exit 1
+ fi
+
+# Read input file
+input_content=`cat $input_filename`
+
+# Get position of closing `svg` tag in the SVG
+svg_close_index=`echo "$input_content" | grep -b -o "</svg>" | cut -d: -f1`
 
 # Generate the "selector" element
 selector_object_id='_StrokeToPathSelectorObject'
 selector_object="    <path\
  id=\"${selector_object_id}\"\
- ${path_attribute}\
+ ${select_attr}\
  d=\"M0 0 H 1\"/>\n"
-
-# Read input file
-input_content=`cat $input_filename`
-
-# Todo: Validate that content contains closing `svg` tag
-
-# Get position of closing `svg` tag in the SVG
-svg_close_index=`echo "$input_content" | grep -b -o "</svg>" | cut -d: -f1`
 
 # Insert "selector" element into the SVG
 modified_input="${input_content:0:$svg_close_index}\
@@ -40,7 +123,7 @@ echo "$modified_input" > $output_filename
 # selector query to select similar objects and convert stroke to path
 inkscape -f $output_real_filename\
     --select=$selector_object_id\
-    --verb="EditSelect$select_query"\
+    --verb="EditSelect$select_method"\
     --verb="StrokeToPath"\
     --verb="EditDeselect"\
     --select=$selector_object_id\
