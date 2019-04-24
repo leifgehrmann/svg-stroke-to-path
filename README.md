@@ -29,7 +29,7 @@ pretty... So this is not recommended for production.
 ```
 $ ./svg-stroke-to-path -h
 
-Usage: ./svg-stroke-to-path input_filename select_method select_attr output_filename
+Usage: ./svg-stroke-to-path select_method select_attr file ...
 
   select_method can be one of:
     * All - Select all objects
@@ -53,7 +53,7 @@ Usage: ./svg-stroke-to-path input_filename select_method select_attr output_file
 Example:
 
 ```
-./svg-stroke-to-path test/input.svg SameStrokeColor 'stroke="#000"' test/output.svg
+./svg-stroke-to-path SameStrokeColor 'stroke="#000"' test/input.svg
 ```
 
 Running this command _will_ launch Inkscape for a split second, so don't be

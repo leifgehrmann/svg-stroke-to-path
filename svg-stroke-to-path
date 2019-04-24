@@ -2,7 +2,7 @@
 
 display_help() {
     echo
-    echo "Usage: $0 input_filename select_method select_attr output_filename" \
+    echo "Usage: $0 select_method select_attr file ..." \
 >&2
     echo
     echo "  select_method can be one of:"
@@ -37,47 +37,15 @@ if ! [ -x "$(command -v inkscape)" ]; then
   exit 1
 fi
 
-# Read the arguments
-input_filename=$1
-select_method=$2
-select_attr=$3
-output_filename=$4
 # Hopefully this `realpath` shim works on all platforms 😬
-output_real_filename="$(cd "$(dirname "$0")" && pwd -P)/$output_filename"
+script_path="$(cd "$(dirname "$0")" && pwd -P)"
 
-# Todo: validate arguments are all strings
-if [ -z "$input_filename" ]; then
-    display_help
-    echo "Error: input_filename required"
-    exit 1
-fi
+# Read the arguments
+select_method=$1
+select_attr=$2
+files="${@:3}"
 
-if [ -z "$select_method" ]; then
-    display_help
-    echo "Error: select_method required"
-    exit 1
-fi
-
-if [ -z "$select_attr" ]; then
-    display_help
-    echo "Error: select_attr required"
-    exit 1
-fi
-
-if [ -z "$output_filename" ]; then
-    display_help
-    echo "Error: output_filename required"
-    exit 1
-fi
-
-# Validate that input_filename exists
-if [ ! -f "$input_filename" ]; then
-    display_help
-    echo "Error: input_filename '$input_filename' not found"
-    exit 1
-fi
-
-# Validate that selectory query is a valid string
+# Validate that select method is a valid string
 case $select_method in
     All|\
     AllInAllLayers|\
@@ -91,42 +59,74 @@ case $select_method in
     exit 1;;
 esac
 
- # Validate that content contains closing `svg` tag
- if ! grep -q "</svg>" "$input_filename"; then
-   display_help
-   echo "Error: input_filename $input_filename not valid SVG"
-   exit 1
- fi
+# Validate that the select attr is set
+if [ -z "$select_attr" ]; then
+    display_help
+    echo "Error: select_attr required"
+    exit 1
+fi
 
-# Read input file
-input_content=`cat $input_filename`
+validate_file() {
+    # Validate that input_filename exists
+    if [ ! -f "$1" ]; then
+        display_help
+        echo "Error: input_filename '$1' not found"
+        exit 1
+    fi
 
-# Get position of closing `svg` tag in the SVG
-svg_close_index=`echo "$input_content" | grep -b -o "</svg>" | cut -d: -f1`
+    # Validate that content contains closing `svg` tag
+    if ! grep -q "</svg>" "$1"; then
+        display_help
+        echo "Error: input_filename $1 not valid SVG"
+        exit 1
+    fi
+}
 
-# Generate the "selector" element
-selector_object_id='_StrokeToPathSelectorObject'
-selector_object="    <path\
- id=\"${selector_object_id}\"\
- ${select_attr}\
- d=\"M0 0 H 1\"/>\n"
+for file in $files
+do
+    validate_file "$file"
+done
 
-# Insert "selector" element into the SVG
-modified_input="${input_content:0:$svg_close_index}\
-$selector_object\
-${input_content:$svg_close_index}"
+convert_file() {
+    select_method=$1
+    select_attr=$2
+    input_filename=$3
 
-# Store the new SVG
-echo "$modified_input" > $output_filename
+    # Read input file
+    input_content=`cat $input_filename`
 
-# Convert stroke to path by selecting the "selector" element and use Inkscapes
-# selector query to select similar objects and convert stroke to path
-inkscape -f $output_real_filename\
-    --select=$selector_object_id\
-    --verb="EditSelect$select_method"\
-    --verb="StrokeToPath"\
-    --verb="EditDeselect"\
-    --select=$selector_object_id\
-    --verb="EditDelete"\
-    --verb="FileSave"\
-    --verb="FileQuit"
+    # Get position of closing `svg` tag in the SVG
+    svg_close_index=`echo "$input_content" | grep -b -o "</svg>" | cut -d: -f1`
+
+    # Generate the "selector" element
+    selector_object_id='_StrokeToPathSelectorObject'
+    selector_object="    <path\
+     id=\"${selector_object_id}\"\
+     ${select_attr}\
+     d=\"M0 0 H 1\"/>\n"
+
+     # Insert "selector" element into the SVG
+     modified_input="${input_content:0:$svg_close_index}\
+     $selector_object\
+     ${input_content:$svg_close_index}"
+
+     # Store the new SVG
+     echo "$modified_input" > $input_filename
+
+     # Convert stroke to path by selecting the "selector" element and use Inkscapes
+     # selector query to select similar objects and convert stroke to path
+     inkscape -f $input_filename\
+         --select=$selector_object_id\
+         --verb="EditSelect$select_method"\
+         --verb="StrokeToPath"\
+         --verb="EditDeselect"\
+         --select=$selector_object_id\
+         --verb="EditDelete"\
+         --verb="FileSave"\
+         --verb="FileQuit"
+}
+
+for file in $files
+do
+    convert_file $select_method "$select_attr" "$script_path/$file"
+done
