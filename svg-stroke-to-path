@@ -43,7 +43,7 @@ script_path="$(cd "$(dirname "$0")" && pwd -P)"
 # Read the arguments
 select_method=$1
 select_attr=$2
-files="${@:3}"
+shift 2
 
 # Validate that select method is a valid string
 case $select_method in
@@ -77,12 +77,12 @@ validate_file() {
     # Validate that content contains closing `svg` tag
     if ! grep -q "</svg>" "$1"; then
         display_help
-        echo "Error: input_filename $1 not valid SVG"
+        echo "Error: input_filename '$1' not valid SVG"
         exit 1
     fi
 }
 
-for file in $files
+for file in "$@"
 do
     validate_file "$file"
 done
@@ -93,7 +93,7 @@ convert_file() {
     input_filename=$3
 
     # Read input file
-    input_content=`cat $input_filename`
+    input_content=`cat "$input_filename"`
 
     # Get position of closing `svg` tag in the SVG
     svg_close_index=`echo "$input_content" | grep -b -o "</svg>" | cut -d: -f1`
@@ -111,11 +111,11 @@ convert_file() {
      ${input_content:$svg_close_index}"
 
      # Store the new SVG
-     echo "$modified_input" > $input_filename
+     echo "$modified_input" > "$input_filename"
 
      # Convert stroke to path by selecting the "selector" element and use Inkscapes
      # selector query to select similar objects and convert stroke to path
-     inkscape -f $input_filename\
+     inkscape -f "$input_filename"\
          --select=$selector_object_id\
          --verb="EditSelect$select_method"\
          --verb="StrokeToPath"\
@@ -126,7 +126,7 @@ convert_file() {
          --verb="FileQuit"
 }
 
-for file in $files
+for file in "$@"
 do
     convert_file $select_method "$select_attr" "$script_path/$file"
 done
