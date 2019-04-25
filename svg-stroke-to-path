@@ -36,9 +36,6 @@ if ! [ -x "$(command -v inkscape)" ]; then
   exit 1
 fi
 
-# Hopefully this `realpath` shim works on all platforms 😬
-script_path="$(cd "$(dirname "$0")" && pwd -P)"
-
 # Read the arguments
 select_method=$1
 select_attr=$2
@@ -127,5 +124,5 @@ convert_file() {
 
 for file in "$@"
 do
-    convert_file $select_method "$select_attr" "$script_path/$file"
+    convert_file $select_method "$select_attr" `pwd`"/$file"
 done
