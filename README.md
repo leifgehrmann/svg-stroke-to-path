@@ -24,12 +24,18 @@ pretty... So this is not recommended for production.
 
 [Brew]: https://brew.sh
 
+## Installing
+
+```
+make install
+```
+
 ## Usage
 
 ```
-$ ./svg-stroke-to-path -h
+$ svg-stroke-to-path -h
 
-Usage: ./svg-stroke-to-path select_method select_attr file ...
+Usage: svg-stroke-to-path select_method select_attr file ...
 
   select_method can be one of:
     * All - Select all objects
@@ -53,7 +59,7 @@ Usage: ./svg-stroke-to-path select_method select_attr file ...
 Example:
 
 ```
-./svg-stroke-to-path SameStrokeColor 'stroke="#000"' test/input.svg
+svg-stroke-to-path SameStrokeColor 'stroke="#000"' test/input.svg
 ```
 
 Running this command _will_ launch Inkscape for a split second, so don't be

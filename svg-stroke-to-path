@@ -2,8 +2,7 @@
 
 display_help() {
     echo
-    echo "Usage: $0 select_method select_attr file ..." \
->&2
+    echo "Usage: svg-stroke-to-path select_method select_attr file ..."
     echo
     echo "  select_method can be one of:"
     echo "    * All - Select all objects"

@@ -1,3 +1,6 @@
+install:
+	ln -s `pwd`/svg-stroke-to-path /usr/local/bin/svg-stroke-to-path
+
 tests: test-basic test-files-with-unusual-filepaths
 	@echo
 	@echo "Success! All tests passed."
