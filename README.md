@@ -20,9 +20,14 @@ pretty... So this is not recommended for production.
 ## Requirements
 
 * Inkscape
-    * On Mac OS, install [Brew], then run `brew cask install inkscape`
+    * On macOS, install [Brew], then run `brew cask install inkscape`
 
 [Brew]: https://brew.sh
+
+Note: The script has only been tested on Inkscape versions:
+
+* Inkscape 0.92.2 5c3e80d, 2017-08-06
+* Inkscape 1.0beta1 (32d4812, 2019-09-19)
 
 ## Installing
 
