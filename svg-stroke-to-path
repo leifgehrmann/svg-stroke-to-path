@@ -29,25 +29,22 @@ if [[ "$1" == "-h" ]]; then
   exit 0
 fi
 
-inkscape_bin=inkscape
-macos_inkscape_1_0_path=\
+inkscape_bin=NULL
+inkscape_bin_name=inkscape
+inkscape_bin_macos_path=\
 "/Applications/Inkscape.app/Contents/MacOS/Inkscape"
 
 verify_inkscape_is_installed() {
-    # For macOS
-    if ! [[ -x "$(command -v inkscape)" ]] && \
-     [[ -f ${macos_inkscape_1_0_path} ]];
-    then
-        inkscape_bin=${macos_inkscape_1_0_path}
+    if [[ -x "$(command -v ${inkscape_bin_name})" ]]; then
+        inkscape_bin=${inkscape_bin_name}
+        return
+    elif [[ -f ${inkscape_bin_macos_path} ]]; then
+        inkscape_bin=${inkscape_bin_macos_path}
         return
     fi
 
-    # Verify that Inkscape is installed
-    if ! [[ -x "$(command -v inkscape)" ]]; then
-      display_help
-      echo 'Error: inkscape is not installed.' >&2
-      exit 1
-    fi
+    echo 'Error: inkscape is not installed.' >&2
+    exit 1
 }
 
 verify_inkscape_is_installed
