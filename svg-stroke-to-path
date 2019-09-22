@@ -29,12 +29,28 @@ if [ "$1" == "-h" ]; then
   exit 0
 fi
 
-# Verify that Inkscape is installed
-if ! [ -x "$(command -v inkscape)" ]; then
-  display_help
-  echo 'Error: inkscape is not installed.' >&2
-  exit 1
-fi
+inkscape_bin=inkscape
+macos_inkscape_1_0_path=\
+"/Applications/Inkscape.app/Contents/MacOS/Inkscape"
+
+verify_inkscape_is_installed() {
+    # For macOS
+    if ! [[ -x "$(command -v inkscape)" ]] && \
+     [[ -f ${macos_inkscape_1_0_path} ]];
+    then
+        inkscape_bin=${macos_inkscape_1_0_path}
+        return
+    fi
+
+    # Verify that Inkscape is installed
+    if ! [[ -x "$(command -v inkscape)" ]]; then
+      display_help
+      echo 'Error: inkscape is not installed.' >&2
+      exit 1
+    fi
+}
+
+verify_inkscape_is_installed
 
 # Read the arguments
 select_method=$1
