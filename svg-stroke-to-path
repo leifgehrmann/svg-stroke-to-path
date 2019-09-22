@@ -24,7 +24,7 @@ display_help() {
     echo
 }
 
-if [ "$1" == "-h" ]; then
+if [[ "$1" == "-h" ]]; then
   display_help
   exit 0
 fi
@@ -58,7 +58,7 @@ select_attr=$2
 shift 2
 
 # Validate that select method is a valid string
-case $select_method in
+case ${select_method} in
     All|\
     AllInAllLayers|\
     SameFillStroke|\
@@ -72,7 +72,7 @@ case $select_method in
 esac
 
 # Validate that the select attr is set
-if [ -z "$select_attr" ]; then
+if [[ -z "$select_attr" ]]; then
     display_help
     echo "Error: select_attr required"
     exit 1
@@ -80,7 +80,7 @@ fi
 
 validate_file() {
     # Validate that input_filename exists
-    if [ ! -f "$1" ]; then
+    if [[ ! -f "$1" ]]; then
         display_help
         echo "Error: input_filename '$1' not found"
         exit 1
@@ -117,16 +117,6 @@ convert_file() {
      ${select_attr}\
      d=\"M0 0 H 1\"/>\n"
 
-     # Insert "selector" element into the SVG
-     modified_input="${input_content:0:$svg_close_index}\
-     $selector_object\
-     ${input_content:$svg_close_index}"
-
-     # Store the new SVG
-     echo "$modified_input" > "$input_filename"
-
-     # Convert stroke to path by selecting the "selector" element and use Inkscapes
-     # selector query to select similar objects and convert stroke to path
      inkscape -f "$input_filename"\
          --select=$selector_object_id\
          --verb="EditSelect$select_method"\
@@ -136,9 +126,20 @@ convert_file() {
          --verb="EditDelete"\
          --verb="FileSave"\
          --verb="FileQuit"
+    # Insert "selector" element into the SVG
+    modified_input="${input_content:0:$svg_close_index}\
+    $selector_object\
+    ${input_content:$svg_close_index}"
+
+    # Store the new SVG
+    echo "$modified_input" > "$input_filename"
+
+    # Convert stroke to path by selecting the "selector" element and use
+    # Inkscape's selector query to select similar objects and convert stroke
+    # to path
 }
 
 for file in "$@"
 do
-    convert_file $select_method "$select_attr" `pwd`"/$file"
+    convert_file ${select_method} "$select_attr" `pwd`"/$file"
 done
