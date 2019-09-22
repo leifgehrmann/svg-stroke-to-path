@@ -30,6 +30,7 @@ if [[ "$1" == "-h" ]]; then
 fi
 
 inkscape_bin=NULL
+inkscape_bin_version=NULL
 inkscape_bin_name=inkscape
 inkscape_bin_macos_path=\
 "/Applications/Inkscape.app/Contents/MacOS/Inkscape"
@@ -48,6 +49,17 @@ verify_inkscape_is_installed() {
 }
 
 verify_inkscape_is_installed
+
+read_inkscape_version() {
+    inkscape_bin_version=`${inkscape_bin} -V | grep -o "[0-9]\+\.[0-9.]\+"`
+}
+
+read_inkscape_version
+
+# Used later to distinguish between 0.92 and 1.0
+semver_greater_than() {
+    test "$(printf '%s\n' "$@" | sort -V | head -n 1)" != "$1";
+}
 
 # Read the arguments
 select_method=$1
@@ -112,17 +124,8 @@ convert_file() {
     selector_object="    <path\
      id=\"${selector_object_id}\"\
      ${select_attr}\
-     d=\"M0 0 H 1\"/>\n"
+     d=\"M0 0 H 0\"/>\n"
 
-     inkscape -f "$input_filename"\
-         --select=$selector_object_id\
-         --verb="EditSelect$select_method"\
-         --verb="StrokeToPath"\
-         --verb="EditDeselect"\
-         --select=$selector_object_id\
-         --verb="EditDelete"\
-         --verb="FileSave"\
-         --verb="FileQuit"
     # Insert "selector" element into the SVG
     modified_input="${input_content:0:$svg_close_index}\
     $selector_object\
@@ -132,8 +135,28 @@ convert_file() {
     echo "$modified_input" > "$input_filename"
 
     # Convert stroke to path by selecting the "selector" element and use
-    # Inkscape's selector query to select similar objects and convert stroke
-    # to path
+    # Inkscape's selector query to select similar objects and convert
+    # stroke to path
+    # For more information on Inkscape's command line, see:
+    # http://wiki.inkscape.org/wiki/index.php/Using_the_Command_Line
+    if semver_greater_than ${inkscape_bin_version} 1; then
+        # Post 0.92.x (Essentially 1.0)
+        ${inkscape_bin} --batch-process \
+            --select=${selector_object_id}\
+            --verb "EditSelect$select_method;StrokeToPath;FileSave"\
+            "$input_filename"
+    else
+        # 0.92.x
+        ${inkscape_bin} -f "$input_filename"\
+            --select=${selector_object_id}\
+            --verb="EditSelect$select_method"\
+            --verb="StrokeToPath"\
+            --verb="EditDeselect"\
+            --select=${selector_object_id}\
+            --verb="EditDelete"\
+            --verb="FileSave"\
+            --verb="FileQuit"
+    fi
 }
 
 for file in "$@"
