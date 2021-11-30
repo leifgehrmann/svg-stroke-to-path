@@ -28,6 +28,7 @@ Note: The script has only been tested on Inkscape versions:
 
 * Inkscape 0.92.2 5c3e80d, 2017-08-06
 * Inkscape 1.0beta1 (32d4812, 2019-09-19)
+* Inkscape 1.1.1 (c3084ef, 2021-09-22)
 
 ## Installing
 
