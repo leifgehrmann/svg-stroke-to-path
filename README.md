@@ -2,6 +2,8 @@
 
 ![Illustration explaining what this does](Illustration.svg)
 
+Archive note: This project has been moved to https://codeberg.org/leifgehrmann/svg-stroke-to-path
+
 Shell script to convert strokes in an SVG to paths using Inkscape's CLI.
 
 ## Why?
